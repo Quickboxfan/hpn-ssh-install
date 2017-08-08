@@ -1,0 +1,33 @@
+#!/bin/bash
+
+############################################################################################
+#
+#  Copyright (c) 2017 arakasi72 (https://github.com/arakasi72)
+#
+#  --> Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
+#
+############################################################################################
+
+sshdir='https://mirrors.evowise.com/pub/OpenBSD/OpenSSH/portable/'
+
+hpndir='https://sourceforge.net/projects/hpnssh/files'
+hpnpatch=$(wget -q -O - $hpndir | grep -o "HPN-SSH [0-9]\{1,2\}\v[0-9]\{1,2\}\ [0-9]\.[0-9]p[0-9]" | sort -uV | tail -1)
+hpnvers=$(echo $hpnpatch | cut -d' ' -f3)
+sshfile="openssh-"$hpnvers
+hpndl="https://downloads.sourceforge.net/project/hpnssh/"$(echo $hpnpatch | sed "s/ /%20/g")"/"
+patchfile="openssh-"$(echo $hpnvers | sed "s/\./_/g" | sed "s/[Pp]/_P/g")"-hpn-"$(echo $hpnpatch | cut -d' ' -f2 | sed "s/v/\./g")".diff"
+
+mkdir -p $HOME/source
+cd $HOME/source
+
+curl -s $sshdir$sshfile".tar.gz" | tar zx
+
+wget -q $hpndl$patchfile
+
+cd $sshfile
+#patch -p1 < ../openssh-7_5_P1-hpn-14.13.diff
+patch -p1 < ../$patchfile
+./configure
+make -s
+make -s install
+service ssh restart
